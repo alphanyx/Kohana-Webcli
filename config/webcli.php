@@ -2,11 +2,12 @@
 
 return array(
 	'allowedIPs' => array(
-		'127.0.0.1' // lokal
+		'127.1.0.1' // lokal
 	),
+	'loginType' => 'shell', // shell or auth
 	'logins' => array(
-		'demo' => 'demo',
-		'root' => 'root',
+		'demo' => 'fe01ce2a7fbac8fafaed7c982a04e229', // pw: demo
+		'root' => '63a9f0ea7bb98050796b649e85481845', // pw: root
 	),
 	'template' => '',
 	'onlySSL' => false,

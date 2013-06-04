@@ -46,6 +46,22 @@ class Webcli_Handle {
 		return array_keys($methods);
 	}
 
+	public function getTaskDocumentation($task) {
+		$methods = $this->getMethods();
+
+		if (isset($methods[$task])) {
+			$className = $methods[$task];
+
+			$classVars = get_class_vars($className);
+
+			if (isset($classVars[$task . '_documentation'])) {
+				return $classVars[$task . '_documentation'];
+			}
+		}
+
+		return false;
+	}
+
 
 	public function __call($task, $args) {
 		$methods = $this->getMethods();

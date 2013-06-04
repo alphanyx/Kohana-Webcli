@@ -169,26 +169,36 @@ function handle_json_rpc($object) {
   // call Service Method
   try {
     $class = get_class($object);
-    $methods = $object->getTaskMethods();
     // $methods = get_class_methods($class);
+    $methods = $object->getTaskMethods();
     if (strcmp($method, 'help') == 0) {
       if (count($params) > 0) {
         if (!in_array($params[0], $methods)) {
           $no_method = 'There is no ' . $params[0] . ' method';
           throw new Exception($no_method);
         } else {
-          $static = get_class_vars($class);
-          $help_str_name = $params[0] . "_documentation";
+          // $static = get_class_vars($class);
+          // $help_str_name = $params[0] . "_documentation";
           //throw new Exception(implode(", ", $static));
-          if (array_key_exists($help_str_name, $static)) {
-            echo response($static[$help_str_name], $id, null);
+
+          // if (array_key_exists($help_str_name, $static)) {
+          //   echo response($static[$help_str_name], $id, null);
+          // } else {
+          //   throw new Exception($method . " method has no documentation");
+          // }
+
+          $documentation = $object->getTaskDocumentation($params[0]);
+
+          if ($documentation) {
+            echo response($documentation, $id, null);
           } else {
-            throw new Exception($method . " method has no documentation");
+            throw new Exception($params[0] . " method has no documentation");
           }
         }
       } else {
         $url = "http://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
         $msg = 'PHP JSON-RPC - in "' . $url . "\"\n";
+        $class = 'Webcli';
         $msg .= "class \"$class\" has methods: " . implode(", ", array_slice($methods, 0, -1)) . " and " .  $methods[count($methods)-1] . ".";
         echo response($msg, $id, null);
       }
