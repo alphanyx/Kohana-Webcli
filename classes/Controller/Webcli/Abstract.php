@@ -6,66 +6,52 @@
  */
 abstract class Controller_Webcli_Abstract extends Controller{
 
+	protected $view;
+	protected $isAjax;
+	protected $settings;
+
 	/**
-	 * Method on start, sets the current user and project and checks the user rights and projects
+	 * Method on start, sets the template and loads the settings
 	 */
 	public function before() {
 		parent::before();
 
-		$this->view = SmartyView::factory();
+		$this->settings = Kohana::$config->load('webcli')->as_array();
 
-		$this->template = strtolower(trim(implode('/', array($this->request->directory(), $this->request->domainTemplatepath(), $this->request->controller(), $this->request->action())), '/'));
+		// set the current url
+		$this->settings['terminalUrl'] = $this->request->url();
+		$this->isAjax = $this->request->is_ajax();
 
-		$this->layout = strtolower(trim(implode('/', array($this->request->directory(), $this->request->domainTemplatepath(), 'layout', 'application')), '/'));
+		if (!$this->isAjax) {
+			$template = 'webcli/index';
+			if (isset($this->settings['template']) && !empty($this->settings['template'])) {
+				$template = $this->settings['template'];
+			}
 
-		if (isset($this->current_project)) {
-			$this->view->project = $this->current_project;
-		}
+			$userIp = Request::$client_ip;
+			$loginRequired = true;
 
-		$this->view->projectSettings = $this->projectSettings;
-		$this->view->title = $this->projectSettings->title;
-		$this->view->meta = Helper_Config::getMetaConfiguration();
+			if (isset($this->settings['allowedIPs']) && is_array($this->settings['allowedIPs']) && in_array($userIp, $this->settings['allowedIPs'])) {
+				$loginRequired = false;
+			}
 
-		$controller = strtolower($this->request->controller());
-		$pagetitle = false;
+			$data = array(
+				'settings' => $this->settings,
+				'loginRequired' => $loginRequired,
+			);
 
-		if (isset($this->projectSettings->titles[$controller])) {
-			$pagetitle = $this->projectSettings->titles[$controller];
-		}
-
-		$this->view->pagetitle = $pagetitle;
-		$this->view->xing_share = urlencode(URL::base() . Route::get('default')->uri(array('controller'=>'vision')));
-
-		if ($referrer = $this->request->query('referrer')) {
-			Session::instance()->set('referrer', $referrer);
+			$this->view = View::factory($template, $data);
 		}
 	}
 
 	/**
-	 * Method on end, renders the remplate if auto_render is true
+	 * Method on end, renders the template
 	 */
 	public function after() {
 		parent::after();
 
-		if($this->auto_render) {
-			$this->response->body($this->render());
+		if (!$this->isAjax) {
+			$this->response->body($this->view->render());
 		}
-	}
-
-	/**
-	 * Render method, renders the the template and renders the layout or content only if render_layout is false
-	 * @return string rendered layout/content
-	 */
-	public function render() {
-		$this->view->bodyid = strtolower(trim(implode('-', array($this->request->directory(), $this->request->controller(), $this->request->action())), '-'));
-		$this->view->values = $this->getValues();
-		$this->view->errors = $this->_errors;
-		$this->view->this = $this;
-		$content = $this->view->render($this->template);
-
-		if(!$this->render_layout) return $content;
-
-		$this->view->_content = $content;
-		return $this->view->render($this->layout);
 	}
 }
