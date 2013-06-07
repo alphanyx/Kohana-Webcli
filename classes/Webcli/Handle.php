@@ -18,6 +18,7 @@ class Webcli_Handle {
 			self::$methods = array();
 			$classes = Kohana::list_files('classes/webclitask');
 
+
 			foreach ($classes as $file => $absolutePath) {
 				$file = substr($file, 0, -strlen(EXT));
 				$className = trim(str_replace('classes','',$file), DIRECTORY_SEPARATOR);
@@ -25,6 +26,7 @@ class Webcli_Handle {
 				$className = str_replace(' ', '_', ucwords(str_replace(DIRECTORY_SEPARATOR,' ', $className)));
 
 				if (class_exists($className)) {
+
 					$methods = get_class_methods($className);
 
 					foreach ($methods as $method) {
@@ -52,10 +54,14 @@ class Webcli_Handle {
 		if (isset($methods[$task])) {
 			$className = $methods[$task];
 
-			$classVars = get_class_vars($className);
+			if (method_exists($className, 'getDocumentation')) {
+				return $this->callClassMethod($className, 'getDocumentation');
+			} else {
+				$classVars = get_class_vars($className);
 
-			if (isset($classVars[$task . '_documentation'])) {
-				return $classVars[$task . '_documentation'];
+				if (isset($classVars[$task . '_documentation'])) {
+					return $classVars[$task . '_documentation'];
+				}
 			}
 		}
 
@@ -69,14 +75,18 @@ class Webcli_Handle {
 		if (isset($methods[$task])) {
 			$className = $methods[$task];
 
-			$reflection = new ReflectionClass($className);
-
-			$method = $reflection->getMethod('task_' . $task);
-			$class = $reflection->newInstanceArgs(array($this->settings));
-
-			return $method->invokeArgs($class, $args);
+			return $this->callClassMethod($className, 'task_' . $task, array($this->settings), $args);
 		} else {
 			throw new Exception('There is no ' . $task . ' method');
 		}
+	}
+
+	protected function callClassMethod($className, $method, $instanceArgs = array(), $args = array()) {
+		$reflection = new ReflectionClass($className);
+
+		$method = $reflection->getMethod($method);
+		$class = $reflection->newInstanceArgs($instanceArgs);
+
+		return $method->invokeArgs($class, $args);
 	}
 }

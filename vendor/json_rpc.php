@@ -84,10 +84,18 @@ function get_field($object, $field, $default) {
 // ----------------------------------------------------------------------------
 //create json-rpc response
 function response($result, $id, $error) {
-  return json_encode(array("jsonrpc" => "2.0",
-			   'result' => $result,
-			   'id' => $id,
-			   'error'=> $error));
+  $response = array("jsonrpc" => "2.0",
+			'result' => '',
+			'id' => $id,
+			'error'=> $error);
+
+  if (is_array($result)) {
+  	$response = array_merge($response, $result);
+  } else {
+  	$response['result'] = $result;
+  }
+
+  return json_encode($response);
 }
 
 // ----------------------------------------------------------------------------
